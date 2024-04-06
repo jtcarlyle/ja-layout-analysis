@@ -1,0 +1,232 @@
+#+TITLE: JA Layout Analyzer README
+#+AUTHOR: John Carlyle
+
+* Overview
+
+** /Kana/ Layouts and their Public Demise
+
+Over the last few decades Japanese input methods have transitioned from /kana/ to /roomazi/ input. Starting from /roomazi/ adds an extra step of conversion. Sequences of /roomazi/ are automatically converted to /kana/ as the user types, then these are converted to /kanzi/ once the ~SPC~ key is pressed (or committed directly with ~RET~).
+
+Creative hobbyists have designed alternative /roomazi/ schemes to minimize the total number of key strokes required to input a single /kana/ syllabogram. However, even with these considerations, the most commonest /kana/ (virtually all that begin with a consonant) tend to require two keystrokes.
+
+Skilled QWERTY users tend to beat /kana/ layout users in tests of speed, but there is no denying that /kana/ layouts minimize the total required number of strokes and therefore are "faster" if proficiency and other variables are controlled for. An analogy might be stenography "theories" (systems) that include more "briefs" (abbrevations) and allow inputting unstressed syllables and prefixes in a single stroke. "Shorter is faster."
+
+The default JIS /kana/ layout has resulted in market failure because /kana/ are allocated to the number row. Users preceive this to be too exhausting compared to QWERTY /roomazi/ input. The layout itself is also inefficient because it mostly following dictionary order. Consumers probably do not devote much conscious consideration to this issue if QWERTY is their preferred alternative, but I nonetheless harbor little doubt that the placement of high-frequency /kana/ and the ubiquitous /dakuten/ diacritic on the fringes of the keyboard all but damned the JIS /kana/ layout in the 21st century.[fn:1] Reportedly, somewhere between less than 5~10% of Japanese adults use the JIS kana layouts
+
+** Professional Alternative Kana Layouts
+
+*** Nicola (aka OASYS)
+
+*** Sin JIS (X6004)
+
+*** TRON
+
+** Hobbyist Alternative Kana Layouts
+
+*** /Cuki/ and its siblings
+
+*** /Asuka/
+
+*** /(Hacimicu) Koume/
+
+*** /(Sin) Geta/
+
+*** /Naginata/
+
+*** /Buri Cyuutoro/
+
+*** Others
+
+* My Choice
+
+I am considering etiher Sin JIS or TRON with some slight modifications to improve performance. Sin JIS requires no hardware modifications to a normal keyboard, just a software side modification to have spacebar work as sticky shift. TRON requires at least the "wide mod" to gain two thumb keys and even this won't work on ANSI layouts with large space bars. The Sin JIS layout is more intuitive, but it requires more total keystrokes. It is tempting to move the /dakuten/ diacritic to a thumb key since it is so common (like E), but this would change the whole layout. Learning the thumb shift of the TRON layout seems like a fun challenge and will save me a certain amount of keystrokes in the long run, but I am not sure if the extra memory burden and training time is worth the gains.
+
+* Purpose
+
+Fuck it. To make an informed choice, I need to analyze them all. To do this right, I need a real corpus in that I can convert from kana, to possibly /roomazi/, and finally to keystrokes.
+
+Accounting for /roomazi/ would be a huge pain in the butt and I have little interest in it. I am very curious to see if the ACT Dvorak layout performs well, but whatever.
+
+* Strategy
+
+Eventually, I want to use the [[https://github.com/ku-nlp/KWDLC][Kyooto Web Documents Lead Corpus]] to extract character N-gram data for various sorts of /kana/ and /roomazi/ transcriptions. In the mean time, I am happy to use [[https://kouy.exblog.jp/9731073/][Kootaro's kana ngram data]] (creator of Sin Geta). I can really only analyze Tron, Nicola, and Koume with this data since I would have to sort out the prefix shift and suffix /dakuten/ as separate characters to handle Sin JIS properly. All in good time. At least I will have some hard data to critque the three "tradition" thumbshift layouts.
+
+Thumb shift layouts pose some interesting problems. The "rollover" problem in particular is quite difficult to reconcile with key bigram data. Let's take /omou/ for instance on the Sin JIS layout. The sequence is actually
+
+|            | o down | o up | mo down | mo up    | u down | u up |
+| Shift down |        |      |         | Shift up |        |      |
+
+The "Shift up" part might actually fall somewhere between /mo/ and /u/ in actual typing. But what about the adverbial /mou/
+
+|            | mo down | mo up    | u down | u up |
+| Shift down |         | Shift up |        |      |
+
+Counting only the downs, the difference is a new bigram of Shift-/mo/ for /mou/ that should not be counted in the /omou/ sequence.
+
+The problem is that TRON seemed to also allow rollover.
+
+| o down     | o up | mo down | mo up    | u down | u up |
+| Shift down |      |         | Shift up |        |      |
+
+| mo down    | mo up    | u down | u up |
+| Shift down | Shift up |        |      |
+
+To model this correctly, the "rolled over" shifts would have to be counted as their base layer kana counterparts.
+
+This is all a bit speculative, though. Did TRON even really have rollover? The official TRON study doesn't say what kind of shift it had. On the "microtron" keyboard, it is simultaneous like Nicola. Shiki's (Esrille's) keyboard permits two shift modes for the TRON layout: simultaneous and prefix/hold. I think the Koume creator said theat TRON /wasn't/ simultaneous shift, but now I can't find the reference. The wording of the original TRON paper implies that it was simultaneous shift and that rollover wasn't considered at all.
+
+One additional problem in the issue of /handaku/, which works out to two key sequences in TRON. The bigram data won't properly reflect this. Boo.
+
+aDaDa
+
+| aD | 2 |
+| Da | 2 |
+
+adSadSa
+
+| ad | 2 |
+| Sa | 2 |
+| dS | 2 |
+
+Actually, adding the /handaku/ might not be so much of a problem.
+
+Another issue is conversion placement. The TRON designers organized their data so that the conversion key would be pressed after every /bunsecu/. I don't think this reflects modern typing habits anymore. Kouy's data, on the other hand, makes no attempts to include conversion. I was thinking of forcing conversion after every /ku/too/ puncutation mark (maybe quotes, too) and after every four /bunsecu/ that are not interputted by puncutation. I strongly suspect that even /dakuten/ will outstrip the conversion key. For now, I can just ignore conversion even though it will overrepsent certain bigrams. This will vary by person anyways.
+
+単文節変換
+連文節変換
+
+* Metrics for various types of shift
+
+- Simultaneous Shift
+- Normal Shift
+- Sticky (One Shot) Shift
+- Prefix Shift
+- Suffix Shift
+
+The metrics we need are:
+
+- Stroke Coordination :: Measure of difficulty timing simultaneous key
+  holds (whether both are down at the same time). Relevant for same
+  and cross-hand chords. Every key that additional needs to be
+  depressed simultaneously per stroke acrues a point (total number of
+  keys depressed -1).
+
+- Stroke Weight :: Measure of how many keys are depressed
+  simultaneously on a single hand (cross-hand irrelevant).  Every key
+  depressed on one hand accrues a point. Probably needs to be measured
+  at the bigram level.
+
+- SFB :: If you have to press the shift key on the same hand twice
+  consecutively, or in the case of middle finger shift an adjacent key
+  with the same finger, then it counts as an SFB. Rollover shift does
+  not count as an SFB.
+
+- Stroke Efficiency :: Average number of strokes per /kana/ or
+  punctuation mark.
+
+- Key Efficiency :: Average number of keys per /kana/ or punctuation mark.
+
+- Stroke Difficulty :: Coordination + Weight. Single key stroke
+  = 1. Cross hand two-key stroke = 2. Same hand two-key stroke = 3.
+
+- Performance complexity :: Average difficulty of stroke * stroke
+  efficiency.
+
+Strokes are counted by concurrent key depressions. Simultaneous shift does not increase the total number of strokes since the key depressions are always concurrent. However, if there is no rollover involved (which is almost always the case), then each press of the same hand shift per sequence counts as an SFB. When counting SFBs per stroke "bigram", each combination of key must be considered. Thumb to other digits never count as an SFB, but Geta's middle and ring finger shifts probably introduce loads of SFBs.
+
+Normal shift performs poorly because it hurts key efficiency by introducing more keys per /kana/ while also increasing the average coordination per stroke (assuming shift is always cross-hand). 
+
+Sticky shift performs better when only one shifted letter occurs in a sequence since no additional coordination is needed. However in "rollover" sequences, a coordination penalty is incurred if the shift is held between the two strokes. A weight penalty is furthered incurred if the two strokes involve hand alternation because the input will switch from a cross-hand shift to a same-hand shift.
+
+Prefix and suffix shift simply count as additional one-key strokes. This must be reflected properly in the bigram data.
+
+The most difficult variable is rollover. Rollover decreases SFBs in the case of same-hand shift. This is sometimes desirable for simultaneous shift (difficulties of implementation aside), but total weight and coordination penalties remain unchanged. Whether it is worth it depends on how much it reduces SFBs. I am not convinced this number is significant in the case of the TRON layout, which already has a very low ratio of shifted /kana/ for a simultaneous thumb shift layout. It might help NICOLA, even though rollover is explicitly rejected in the OASYS specs. 
+
+In the case of single normal/sticky shift, determining whether a shift is cross or same-hand becomes more complicated because of hand alternation. Fortunately, we already track hand alternation elsewhere. Rollover and its effects on weight, coordination, and SFBs must be tracked at the bigram level because it is directly related to stroke transitions.
+
+Hypotheses:
+
+- /Sin Geta/ has a high percent of SFBs because the shifts are on the
+  middle and ring fingers. Other middle/ring finger prefix shift
+  layouts suffer from similar design choices.
+
+- Sin JIS with sticky shift is less efficient in terms of strokes, but
+  is lighter and requires less coordination.
+
+- TRON is lighter weight and requires less coordination than
+  Nicola. Differences in stroke effciency are negligible. It might
+  have more difficult simple strokes, though.
+
+- /Kana/ layouts that strictly adhere to frequency to arrange the base
+  layer (Sin JIS and TRON) will virtually always outperform /roomazi/
+  layouts in stroke/key efficiency. This comes at the cost of more
+  difficult stroke transitions.
+
+* Implementation
+:PROPERTIES:
+:ID:       10F6596A-B8A3-4219-A529-39C636E2220E
+:END:
+
+Here are the parts that we need:
+
+- *Layout class* with parser
+  - Holds information about keys and their outputs
+    + finger
+    + hand
+    + row
+    + output string
+    + layer modifiers
+    + modifier configuration
+      * phasing :: hold/one shot/simultaneous
+      * placement :: prefix/suffix/compat
+        - NOTE: True affixes (e.g. suffixes /dakuten/ and /handaku/) that
+          have no rollover or one-shot features might be better
+          treated as differences in transliteration.
+        - NOTE: For compatibility with Ainu and S. Min, it might nice
+          to have a small kana affix.
+      * rollover :: t/f (only applies if hold is allowed)
+  - Has methods that
+    - Parse plain text layout files (for convenience)
+    - Lookup information for output tokens
+    - List all output tokens
+- *Transliteration class*
+  - Converts kana to a transliteration
+    + Various romanization schemes and abbreviations
+    + Separation of diacritics and small digraphs as affixes
+- *Corpus class*
+  - Holds corpus information
+    + kana transcription
+    + original orthography
+    + phrase (/bunsecu/) boundaries
+    + total kana/character count
+  - Can *tokenize* kana transcription according to layout output strings
+  - Maybe convert corpus into kana, output token, morpheme, or /bunsecu/
+    n-gram data? I still want to have stroken transitions between
+    particles and phrase boundaries included by default.
+  - Allow for different conversion paradigms?
+    + Single phrase
+    + Multi phrase
+    + SKK stems
+    + Hiragana IME post-morpheme
+- *Analyzer* script (maybe class)
+  - uses the above classes to generate statistics
+    + Finger, hand, row usage statistics
+    + Total key presses and average key press per /kana/ (key press
+      efficiency)
+    + Total strokes and average stroke per /kana/ (stroke efficiency)
+    + Single hand stroke weight
+    + Stroke coordination complexity
+    + Repeated fingers per bistroke (static & vertical/horizontally moved)
+    + "Bad vaults" per bistroke
+    + Repeated finger skip stroke?
+    + Lateral movement repeated finger bistrokes
+    + Hand alternation
+    + "Rolls/arpeggios" (surpisingly ill-defined) by direction
+    + "Redirects?"
+    + Pinky/ring twists
+
+I'll use the Anthy corpus for now. Wonder how big it is. Kyooto University web corpus is also hand annotated. Japanese Web Corpus is free, but there are not phonetic annotations. The /kana-kanzi/ conversion 3-gram data from BCCWJ from Kyooto University is floating around online, but the license has changed. Could get into legal trouble. The rest of the corpuses are all locked behind paywalls. Other older Kyooto University corpuses might be worth looking at (newspaper, blogs, etc). I refuse to use Wikipedia data. It is not a good representation of everyday language use. Too many machine translations, proper nouns, and metadata. The register is also too scholarly.
+
+* Footnotes
+
+[fn:1] An interesting side issue: Why has the /Dachian shyh/ /Juh'in/ layout prevailed in Taiwan despite also using the number row? Even with several competing alternative /Juh'in/ and /pinyin/ layouts, it still reigns supreme as far as I know. It is also arrayed in perfect "dictionary order," going so far as to put ultra-frequent tone marks on the top row, making it probably the worst popular layout in the world.
